@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prop Plan Matcher</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#667085;--bd:#e3e6ec;--ac:#1f6feb;--ok:#17803d;--warn:#b54708;--bad:#b42318;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1218;--card:#181c25;--tx:#e8ebf0;--mu:#98a2b3;--bd:#2a303c;--ac:#5b9bff;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1218;--card:#181c25;--tx:#e8ebf0;--mu:#98a2b3;--bd:#2a303c;--ac:#5b9bff;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:0 0 8px}p.sub{color:var(--mu);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--tx);margin:0}.chk input,td input[type=checkbox]{width:auto}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--ac);border:1px solid var(--bd);padding:6px 12px;font-weight:500}
+.res{display:grid;gap:12px}.plan{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
+.rank{font-size:20px;font-weight:700;color:var(--ac)}.plan h3{margin:0;font-size:16px}.meta{color:var(--mu);font-size:13px}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);margin-right:4px}
+.big{text-align:right}.big b{font-size:22px;display:block}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.note{font-size:13px;color:var(--mu)}
+.tbl{max-height:380px;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+td input.pr{width:84px;padding:4px 6px}
+.disc{border:2px solid var(--warn);border-radius:12px;padding:16px;margin-top:24px;font-size:13px;color:var(--tx)}
+@media(max-width:560px){.plan{grid-template-columns:30px 1fr}.big{grid-column:1/-1;text-align:left}}
+html:root:root:root{--bg:#02050f;--card:rgba(10,20,46,.72);--tx:#e6eefc;--mu:#8ea2c7;--bd:#1e3a75;--ac:#4d94ff;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}
+html{background:#050b1a}
+body{background:linear-gradient(160deg,#000 0%,#04091a 40%,#0a2a6b 100%) fixed;min-height:100vh}
+h1{background:linear-gradient(90deg,#fff,#7db4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-color:#1e3a75;box-shadow:0 8px 30px rgba(0,20,90,.35)}
+input,select{background:rgba(4,10,28,.9);border:1px solid #1e3a75;color:#e6eefc}
+input::placeholder{color:#5f73a0}
+input:focus,select:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.28)}
+option{background:#07122b;color:#e6eefc}
+button{background:linear-gradient(135deg,#1d4ed8,#0ea5e9);box-shadow:0 4px 18px rgba(37,99,235,.35)}
+button.ghost{background:transparent;box-shadow:none;border-color:#1e3a75}
+.tbl{border-color:#1e3a75;background:rgba(4,10,28,.5)}
+th{background:rgba(10,30,80,.6)}
+.disc{background:rgba(10,20,46,.6)}
+a{color:#4fd8ff;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-shadow:0 0 10px rgba(79,216,255,.5)}a:hover{color:#c2f3ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Prop Plan Matcher</h1>
+<p class="sub">Enter your budget and trading plan. The page simulates your plan against each firm’s rules and ranks the plans that fit you best. Prices and codes last checked 18 October 2026.</p>
+
+<div class="card">
+<div class="grid">
+<div><label>Budget for fees (USD)</label><input id="budget" type="number" value="70" min="0"></div>
+<div><label>Market</label><select id="market"><option value="any">All markets</option><option value="forex">Forex only</option><option value="futures">Futures only</option><option value="crypto">Crypto</option></select></div>
+<div><label>Risk per trade (% of account)</label><input id="risk" type="number" value="0.5" step="0.1" min="0.05"></div>
+<div><label>Win rate (%)</label><input id="wr" type="number" value="40" min="1" max="99"></div>
+<div><label>Average reward : risk (R)</label><input id="rr" type="number" value="1.5" step="0.1" min="0.2"></div>
+<div><label>Trades per day</label><input id="tpd" type="number" value="2" min="1" max="20"></div>
+<div><label>Trading days per challenge</label><input id="days" type="number" value="30" min="5" max="120"></div>
+<div><label>Minimum profit split (%)</label><input id="split" type="number" value="70" min="0" max="100"></div>
+<div><label>Minimum Trustpilot rating</label><select id="minRating"><option value="0">Any</option><option value="4">4.0+</option><option value="4.4">4.4+</option><option value="4.6">4.6+</option></select></div>
+<div><label>Minimum account size</label><select id="minSize"><option value="0">Any</option><option value="25000">25k+</option><option value="50000">50k+</option><option value="100000">100k+</option></select></div>
+</div>
+<div class="grid" style="margin-top:12px">
+
+<label class="chk"><input id="weekend" type="checkbox"> I hold trades over the weekend</label>
+<label class="chk"><input id="oneday" type="checkbox"> One-day pass: only show plans with no evaluation consistency rule that can be passed in a single trading day</label>
+</div>
+<div style="margin-top:14px"><button id="go">Find my best plans</button></div>
+</div>
+
+<div id="out" class="res"></div>
+
+<div class="card" style="margin-top:16px">
+<h2>Plan library: choose which plans to compare</h2>
+<p class="note">Untick plans you don’t want. Edit any price to match what you see at checkout (discount codes change prices a lot). “check” means I could not confirm that plan’s numbers, so verify them on the firm’s site.</p>
+<div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="ghost" id="all">Select all</button><button class="ghost" id="none">Select none</button><button class="ghost" id="reset">Reset prices</button></div>
+<div class="tbl"><table id="lib"></table></div>
+</div>
+
+<div class="card">
+<h2>Add your own plan</h2>
+<div class="grid">
+<div><label>Firm</label><input id="c_firm" placeholder="e.g. Bulenox"></div>
+<div><label>Plan name</label><input id="c_plan" placeholder="e.g. 50k Eval"></div>
+<div><label>Market</label><select id="c_mkt"><option value="F">Futures</option><option value="X">Forex</option></select></div>
+<div><label>Account size ($)</label><input id="c_size" type="number" value="50000"></div>
+<div><label>Price ($)</label><input id="c_fee" type="number" value="100"></div>
+<div><label>Profit target (%)</label><input id="c_target" type="number" value="6" step="0.5"></div>
+<div><label>Max drawdown (%)</label><input id="c_dd" type="number" value="4" step="0.5"></div>
+<div><label>Daily loss limit (%, 0 = none)</label><input id="c_daily" type="number" value="0" step="0.5"></div>
+<div><label>Drawdown type</label><select id="c_type"><option value="e">End-of-day trailing</option><option value="t">Intraday trailing</option><option value="s">Static</option></select></div>
+<div><label>Profit split (%)</label><input id="c_split" type="number" value="90"></div>
+<div><label>Min trading days</label><input id="c_min" type="number" value="2"></div>
+<div><label>Consistency rule (%, 0 = none)</label><input id="c_cons" type="number" value="0"></div>
+<div><label>Trustpilot rating (0 = unknown)</label><input id="c_rate" type="number" value="0" step="0.1" max="5"></div>
+</div>
+<div style="margin-top:12px"><button id="add">Add plan</button></div>
+</div>
+
+<div class="disc"><b>Not investment advice.</b> This page is an educational tool and does not provide investment, financial, trading or legal advice, and it is not a recommendation to buy any prop firm plan. Trading futures, forex and crypto carries a high risk of loss, and most traders fail prop firm challenges. Results come from a simulation of the numbers you type in, and do not predict real performance or guarantee that you will pass. Plan prices and rules are collected from third-party sources and firm sites in mid-2026, change often (including discounts, activation fees and monthly rebills), and may be wrong or out of date, so always confirm everything on the firm’s own website. Trustpilot ratings are rounded figures from review-site roundups and can change. Discount codes come from review sites and firm pages checked in October 2026; many are affiliate codes belonging to those sites, they can expire without notice, and the final price is whatever the firm’s own checkout shows. Links go to each firm’s main website. This page is not affiliated with any prop firm.</div>
+</div>
+<script>
+var R={"FTMO":4.8,"FundingPips":4.5,"FundedNext":4.5,"Topstep":3.4,"Apex":4.4,"Take Profit Trader":4.4,"Tradeify":4.6,"Lucid Trading":4.6,"MyFundedFutures":4.9,"Alpha Futures":4.9};
+var LINKS={"Lucid Trading":"https://lucidtrading.com/","MyFundedFutures":"https://myfundedfutures.com/","Alpha Futures":"https://alpha-futures.com/","Tradeify":"https://tradeify.co/","Apex":"https://apextraderfunding.com/","Topstep":"https://www.topstep.com/","Take Profit Trader":"https://takeprofittrader.com/","FTMO":"https://ftmo.com/","FundedNext":"https://fundednext.com/","FundingPips":"https://fundingpips.com/","E8 Markets":"https://e8markets.com/","The5ers":"https://the5ers.com/","Breakout":"https://www.breakoutprop.com/","HyroTrader":"https://www.hyrotrader.com/"};
+var CR={"FTMO":1,"FundedNext":1};
+var DEALS={
+"Lucid Trading":{code:"VIBES",pct:30,only:/^(Flex|Pro)/,note:"Several 30% codes are listed for Lucid (VIBES, DGT, DONATO, ETFPROMO). Lucid announced a price rebalance for Oct 18 at 5 PM EST, so check the price at checkout."},
+"MyFundedFutures":{code:"CLUB",pct:40,only:/^(Pro|Builder|Rapid)/,note:"40% off Rapid, Builder and Pro plans; new customers get 50% off a first evaluation (checked 10 Oct 2026)."},
+"Take Profit Trader":{code:"NOFEE40",pct:40,note:"40% off for life (checked Oct 2026). Without the code there is a $130 activation fee for the PRO account."},
+"Alpha Futures":{code:"TRUSTED",pct:10,note:"10% off (code FT also listed). One roundup lists 35% off but without a confirmed code. Standard and Advanced plans add a $149 activation fee after you pass."},
+"FundingPips":{code:"FP",pct:25,note:"25% off per a May 2026 roundup, so verify it still works."},
+"Tradeify":{code:"GEMS",pct:30,ended:"ended Oct 15",note:"The 30% promo ended Oct 15, 2026. Check the site for a new one."},
+"Apex":{code:"SAVENOW",pct:92,ended:"ended Oct 13",note:"The up-to-92% promo ended Oct 13. Apex runs frequent sales, and the prices here are recent sale prices. An activation fee (roughly $69 to $149 by size) is charged after you pass."},
+"Topstep":{code:"",pct:0,note:"No public code. The $49/month 50k price is the standing price; a Responsible Trading Discount (up to $30/month) applies if you accept a daily loss limit. A $149 activation fee applies after you pass."},
+"FTMO":{code:"",pct:0,note:"No coupon codes; occasional special deals on bigger sizes. FTMO prices are in euros, so the USD price will differ a little."},
+"FundedNext":{code:"",pct:0,note:"No code confirmed for forex challenges (code FNFLEX is for FundedNext Futures)."},
+"E8 Markets":{code:"",pct:0,note:"A roundup lists 35% off but the code was not confirmed."},
+"The5ers":{code:"",pct:0,note:"No code found."},
+"Breakout":{code:"",pct:0,note:"Kraken-owned crypto firm. No code confirmed; crypto challenges are simulated and the numbers here need checking."},
+"HyroTrader":{code:"",pct:0,note:"Crypto firm with a 70% starting split. No code confirmed; sources disagree on its cheapest price ($59 or $89)."}
+};
+// firm,plan,market(F/X),size,list price,sale price(0=none),target%,dd%,daily%,dd type(e=EOD trail,t=intraday trail,s=static),split,minDays,consistency%,sourced(1/0),monthly(1/0)
+var D=[
+["Lucid Trading","Flex 25k (daily limit on)","F",25000,79,50.3,5,4,2.4,"e",90,2,50,1,0],
+["Lucid Trading","Flex 25k (no daily limit)","F",25000,89,0,5,4,0,"e",90,2,50,1,0],
+["Lucid Trading","Flex 50k (daily limit on)","F",50000,136,0,6,4,2.4,"e",90,2,50,1,0],
+["Lucid Trading","Flex 50k (no daily limit)","F",50000,146,0,6,4,0,"e",90,2,50,1,0],
+["Lucid Trading","Flex 100k (daily limit on)","F",100000,258,0,6,3,1.8,"e",90,2,50,1,0],
+["Lucid Trading","Flex 100k (no daily limit)","F",100000,293,0,6,3,0,"e",90,2,50,1,0],
+["Lucid Trading","Pro 25k","F",25000,135,0,5,4,0,"e",90,1,0,1,0],
+["Lucid Trading","Pro 50k","F",50000,192,0,6,4,2.4,"e",90,1,0,1,0],
+["MyFundedFutures","Flex 25k","F",25000,77,49,6,4,0,"s",80,2,0,0,1],
+["MyFundedFutures","Core 50k","F",50000,77,0,6,3,0,"e",80,2,50,0,1],
+["MyFundedFutures","Pro 50k","F",50000,265,0,6,3,0,"e",80,2,50,0,1],
+["MyFundedFutures","Builder 50k","F",50000,153,0,6,4,0,"e",80,1,0,0,1],
+["Alpha Futures","Standard 50k","F",50000,79,0,6,4,0,"e",70,2,50,1,1],
+["Alpha Futures","Standard 100k","F",100000,159,0,6,4,0,"e",70,2,50,1,1],
+["Alpha Futures","Standard 150k","F",150000,239,0,6,4,0,"e",70,2,50,1,1],
+["Alpha Futures","Advanced 50k","F",50000,139,0,8,3.5,0,"e",90,2,50,1,1],
+["Alpha Futures","Advanced 100k","F",100000,279,0,8,3.5,0,"e",90,2,50,1,1],
+["Alpha Futures","Zero 50k","F",50000,99,0,6,4,2,"e",70,1,0,1,1],
+["Alpha Futures","Zero 100k","F",100000,199,0,6,4,2,"e",70,1,0,1,1],
+["Tradeify","Select Flex 25k","F",25000,65,0,6,4,0,"e",90,3,0,0,0],
+["Tradeify","Growth 50k","F",50000,139,0,6,4,2.5,"e",90,1,0,1,0],
+["Tradeify","Select 50k","F",50000,159,0,6,4,0,"e",90,3,0,1,0],
+["Tradeify","Growth 100k","F",100000,249,0,6,3.5,2.5,"e",90,1,0,1,0],
+["Tradeify","Select 100k","F",100000,259,0,6,3,0,"e",90,3,0,1,0],
+["Apex","EOD 25k","F",25000,390,177,6,4,2,"e",90,0,0,1,0],
+["Apex","EOD 50k","F",50000,490,197,6,4,2,"e",90,0,0,1,0],
+["Apex","EOD 100k","F",100000,790,297,6,3,1.5,"e",90,0,0,1,0],
+["Apex","Intraday 25k","F",25000,199,118,6,4,0,"t",90,0,0,1,0],
+["Apex","Intraday 50k","F",50000,249,131,6,4,0,"t",90,0,0,1,0],
+["Apex","Intraday 100k","F",100000,399,198,6,3,0,"t",90,0,0,1,0],
+["Topstep","Combine 50k","F",50000,49,0,6,4,0,"e",90,2,0,0,1],
+["Topstep","Combine 100k","F",100000,99,0,6,3,0,"e",90,2,0,0,1],
+["Topstep","Combine 150k","F",150000,149,0,6,3,0,"e",90,2,0,0,1],
+["Take Profit Trader","25k","F",25000,150,0,6,6,0,"e",80,5,0,0,1],
+["Take Profit Trader","50k","F",50000,170,0,6,4,0,"e",80,5,0,0,1],
+["Take Profit Trader","100k","F",100000,330,0,6,3,0,"e",80,5,0,0,1],
+["FTMO","2-Step 10k","X",10000,89,0,10,10,5,"s",80,4,0,0,0],
+["FTMO","2-Step 25k","X",25000,250,0,10,10,5,"s",80,4,0,0,0],
+["FTMO","2-Step 50k","X",50000,345,0,10,10,5,"s",80,4,0,0,0],
+["FTMO","2-Step 100k","X",100000,540,0,10,10,5,"s",80,4,0,0,0],
+["FundedNext","Stellar 2-Step 6k","X",6000,60,0,8,10,5,"s",80,5,0,0,0],
+["FundedNext","Stellar 2-Step 50k","X",50000,250,0,8,10,5,"s",80,5,0,0,0],
+["FundingPips","2-Step 50k","X",50000,250,0,8,10,5,"s",80,3,0,0,0],
+["E8 Markets","50k","X",50000,230,0,8,8,5,"s",80,0,0,0,0],
+["The5ers","Hyper Growth 20k","X",20000,260,0,10,6,3,"s",80,3,0,0,0],
+["Breakout","1-Step Classic 5k","C",5000,50,0,10,6,0,"s",80,0,0,0,0],
+["HyroTrader","One-Step 5k","C",5000,59,0,10,6,4,"s",70,5,0,0,0]
+];
+function mk(a){return {firm:a[0],plan:a[1],market:a[2]==="F"?"futures":a[2]==="C"?"crypto":"forex",size:a[3],fee:a[4],sale:a[5],target:a[6],dd:a[7],daily:a[8],type:a[9],split:a[10],minDays:a[11],cons:a[12],v:a[13],sub:a[14],news:true,weekend:a[2]!=="F",rating:R[a[0]]||0,t2:/2-Step/.test(a[1])?5:0}}
+var $=function(i){return document.getElementById(i)};
+var LS={get:function(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+var ov={},custom=[];
+function all(){return D.map(mk).concat(custom)}
+function pid(p){return p.firm+"|"+p.plan}
+function dealOf(p){var d=DEALS[p.firm];if(!d||!d.pct||d.ended||p.sale)return null;if(d.only&&!d.only.test(p.plan))return null;return d}
+function price(p){var o=ov[pid(p)];if(o&&o.price!=null)return o.price;var b=p.sale||p.fee,d=dealOf(p);return d?Math.round(b*(100-d.pct))/100:b}
+function stars(r){if(!r)return "Trustpilot: not rated here";var n=Math.round(r);return "\u2605\u2605\u2605\u2605\u2605".slice(0,n)+"\u2606\u2606\u2606\u2606\u2606".slice(0,5-n)+" "+r.toFixed(1)+" Trustpilot"}
+function lib(){
+ var h="<tr><th></th><th>Plan</th><th>Size</th><th>Price $</th><th></th></tr>";
+ all().forEach(function(p,i){var o=ov[pid(p)]||{};
+  h+='<tr><td><input type="checkbox" data-i="'+i+'"'+(o.off?'':' checked')+'></td><td>'+p.firm+' \u00b7 '+p.plan+(p.sub?' <span class="pill">per month</span>':'')+'</td><td>'+(p.size/1000)+'k</td><td><input class="pr" type="number" data-i="'+i+'" value="'+price(p)+'"></td><td>'+(p.v?'<span class="pill">sourced</span>':'<span class="pill warn">check</span>')+(p.custom?'<button class="ghost" data-del="'+i+'">remove</button>':'')+'</td></tr>'});
+ $("lib").innerHTML=h;
+}
+$("lib").onchange=function(e){var t=e.target,p=all()[+t.dataset.i];if(!p)return;var id=pid(p);ov[id]=ov[id]||{};
+ if(t.type==="checkbox")ov[id].off=!t.checked;else ov[id].price=+t.value;LS.set("pm_ov",ov);run()};
+$("lib").onclick=function(e){var d=e.target.dataset.del;if(d==null)return;custom.splice(+d-D.length,1);LS.set("pm_cu",custom);lib();run()};
+function setAll(off){all().forEach(function(p){var id=pid(p);ov[id]=ov[id]||{};ov[id].off=off});LS.set("pm_ov",ov);lib();run()}
+$("all").onclick=function(){setAll(false)};$("none").onclick=function(){setAll(true)};
+$("reset").onclick=function(){for(var k in ov)delete ov[k].price;LS.set("pm_ov",ov);lib();run()};
+$("add").onclick=function(){
+ var f=$("c_firm").value.trim(),n=$("c_plan").value.trim();if(!f||!n){alert("Add a firm and a plan name.");return}
+ var m=$("c_mkt").value;
+ custom.push({firm:f,plan:n,market:m==="F"?"futures":"forex",size:+$("c_size").value,fee:+$("c_fee").value,sale:0,target:+$("c_target").value,dd:+$("c_dd").value,daily:+$("c_daily").value,type:$("c_type").value,split:+$("c_split").value,minDays:+$("c_min").value,cons:+$("c_cons").value,v:0,sub:0,news:true,weekend:m==="X",rating:+$("c_rate").value,custom:true});
+ LS.set("pm_cu",custom);lib();run()};
+var S=1;function rnd(){S=(S*1664525+1013904223)>>>0;return S/4294967296}
+function sim(p,u){
+ S=20260;var N=500,pass=0,risk=u.risk/100,w=u.wr/100,tgt=p.target/100,dd=p.dd/100,dl=p.daily/100;
+ for(var n=0;n<N;n++){
+  var eq=1,peak=1,done=0,mx=0,tg=tgt,ph=1,d0=0;
+  for(var d=1;d<=u.days&&!done;d++){
+   var start=eq;
+   for(var t=0;t<u.tpd;t++){
+    eq+=rnd()<w?risk*u.rr:-risk;
+    if(p.type==="t"&&eq>peak)peak=eq;
+    var floor=p.type==="s"?1-dd:peak-dd;
+    if(eq<=floor||(dl&&eq<=start-dl)){done=-1;break}
+   }
+   if(!done){if(p.type==="e"&&eq>peak)peak=eq;if(eq-start>mx)mx=eq-start;if(eq>=1+tg&&d-d0>=p.minDays&&(!p.cons||mx<=p.cons/100*(eq-1))){if(ph===1&&p.t2){ph=2;tg=p.t2/100;eq=1;peak=1;d0=d}else done=1}}
+  }
+  if(done===1)pass++;
+ }
+ return pass/N;
+}
+function run(){
+ var u={budget:+$("budget").value,market:$("market").value,risk:+$("risk").value,wr:+$("wr").value,rr:+$("rr").value,tpd:Math.max(1,+$("tpd").value),days:+$("days").value,split:+$("split").value,minRating:+$("minRating").value,minSize:+$("minSize").value,weekend:$("weekend").checked,oneday:$("oneday").checked};
+ LS.set("pm_in",u);
+ var ok=[],skipped=[],off=0;
+ all().forEach(function(p){
+  var o=ov[pid(p)]||{};if(o.off){off++;return}
+  p.eff=price(p);var why=null;
+  if(p.eff>u.budget)why="over your budget ($"+p.eff+")";
+  else if(u.market!=="any"&&p.market!==u.market&&!(u.market==="crypto"&&CR[p.firm]))why="different market";
+  else if(p.split<u.split)why="profit split below "+u.split+"%";
+  else if(u.minRating&&(p.rating||0)<u.minRating)why=p.rating?"Trustpilot below "+u.minRating:"no Trustpilot rating on file";
+  else if(u.minSize&&p.size<u.minSize)why="account smaller than "+(u.minSize/1000)+"k";
+  else if(u.weekend&&!p.weekend)why="no weekend holding";
+  else if(u.oneday&&p.minDays>1)why="requires "+p.minDays+" trading days minimum";
+  else if(u.oneday&&p.cons)why="consistency rule ("+p.cons+"%) blocks a one-day pass";
+  if(why){skipped.push(p.firm+" "+p.plan+": "+why);return}
+  p.od=null;var uu=u;if(u.oneday){var rn=Math.min(p.target/(2*u.rr),p.dd*.5);uu=Object.assign({},u,{days:1,risk:Math.max(u.risk,rn),tpd:Math.max(u.tpd,8)});p.od=uu}var pr=sim(p,uu);p.pr=pr;p.cost=pr>0?p.eff/pr:Infinity;
+  p.score=pr*100-(p.cost===Infinity?0:Math.min(p.cost/Math.max(u.budget,1),3)*10)+p.split/20+Math.min(p.size,100000)/100000*40+(p.rating?(p.rating-4)*8:0);
+  ok.push(p);
+ });
+ ok.sort(function(a,b){var ta=a.size>=50000?0:1,tb=b.size>=50000?0:1;return ta-tb||b.score-a.score});
+ var h="";
+ var ex=u.wr/100*u.rr-(1-u.wr/100);h+='<div class="card note">Your inputs imply an expectancy of <b>'+ex.toFixed(2)+'R</b> per trade'+(ex>0.25?', which is a strong edge. Pass chances are only as realistic as these numbers, so use results from a real backtest or trading journal, and remember that most traders fail prop firm challenges.':ex<=0?', which means no statistical edge, so expect low pass chances.':'.')+'</div>';
+ if(u.oneday)h+='<div class="card note"><b class="warn">Single-session mode.</b> Only plans with no minimum trading days and no consistency rule are shown, and the simulation allows one day of trading. For each plan the page uses the smallest sizing that can reach its target in one day (or your own risk per trade if that is higher) with at least 8 trades, and shows the sizing it used. Bigger sizing means a higher risk of breaching the drawdown, so read the pass chance as a risk measure, not a target.</div>';var bd=ok.filter(function(p){return dealOf(p)&&!(ov[pid(p)]&&ov[pid(p)].price!=null)})[0];if(bd){var bl=dealOf(bd);h+='<div class="card" style="border-color:var(--ok)"><b class="ok">Best discounted offer for your budget</b><div style="margin-top:4px"><b>'+bd.firm+' \u00b7 '+bd.plan+'</b> for $'+bd.eff+' instead of $'+bd.fee+' with code <b>'+bl.code+'</b> \u00b7 '+Math.round(bd.pr*100)+'% pass chance \u00b7 <a href="'+(LINKS[bd.firm]||'#')+'" target="_blank" rel="noopener">Go to '+bd.firm+' \u2192</a></div></div>'}
+ if(!ok.length)h+='<div class="card">No plan fits all your filters. Try a higher budget or a lower minimum split.</div>';
+ ok.forEach(function(p,i){
+  var c=p.pr>=.5?"ok":p.pr>=.25?"warn":"bad",tl={e:"EOD trailing",t:"intraday trailing",s:"static"}[p.type],dl=dealOf(p),d0=DEALS[p.firm]||{};
+  h+='<div class="card plan"><div class="rank">#'+(i+1)+'</div><div><h3>'+p.firm+' \u00b7 '+p.plan+'</h3><div class="meta"><span class="warn">'+stars(p.rating)+'</span></div><div class="meta"><span class="pill">'+p.market+'</span><span class="pill">target '+p.target+'%</span><span class="pill">max DD '+p.dd+'% '+tl+'</span><span class="pill">'+(p.daily?'daily '+p.daily+'%':'no daily limit')+'</span><span class="pill">split '+p.split+'%</span>'+(p.cons?'<span class="pill">consistency '+p.cons+'%</span>':'')+(p.minDays<=1&&!p.cons?'<span class="pill ok">1-day pass possible</span>':'')+(p.od?'<span class="pill">one-day sizing: '+p.od.risk.toFixed(2)+'% risk, up to '+p.od.tpd+' trades</span>':'')+(p.t2?'<span class="pill">2 phases: '+p.target+'% then '+p.t2+'%</span>':'')+(p.v?'':'<span class="pill warn">verify price/rules</span>')+'</div><div class="meta" style="margin-top:6px">Price $'+p.eff+(p.sub?' per month':'')+(dl&&!(ov[pid(p)]&&ov[pid(p)].price!=null)?' <b class="ok">with code '+dl.code+' (\u2212'+dl.pct+'%, list $'+p.fee+')</b>':(p.sale&&p.eff===p.sale?' (list $'+p.fee+(DEALS[p.firm]&&DEALS[p.firm].pct&&!DEALS[p.firm].ended?', with code '+DEALS[p.firm].code:'')+')':''))+' \u00b7 expected spend to pass \u2248 '+(p.cost===Infinity?'n/a':'$'+Math.round(p.cost))+'</div><div class="meta" style="margin-top:6px">'+(d0.ended?'<span class="pill warn">code '+d0.code+' '+d0.ended+'</span> ':'')+(d0.note||'')+' <a href="'+(LINKS[p.firm]||'#')+'" target="_blank" rel="noopener">Go to '+p.firm+' \u2192</a></div></div><div class="big"><b class="'+c+'">'+Math.round(p.pr*100)+'%</b><span class="meta">pass chance</span></div></div>'});
+ if(skipped.length)h+='<div class="card note"><b>Filtered out ('+skipped.length+')</b><br>'+skipped.join("<br>")+'</div>';
+ if(off)h+='<div class="note">'+off+' plans are unticked in the library and were not compared.</div>';
+ $("out").innerHTML=h;
+}
+var s=LS.get("pm_in");if(s)for(var k in s){var e=$(k);if(e){if(e.type==="checkbox")e.checked=s[k];else e.value=s[k]}}
+$("go").onclick=run;["lib","add"].forEach(function(i){var e=$(i),c=e&&e.closest(".card");if(c)c.remove()});run();
+</script>
+</body>
+</html>
